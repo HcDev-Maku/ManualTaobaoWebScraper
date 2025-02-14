@@ -1,7 +1,14 @@
 from selenium import webdriver
 import pygetwindow as gw
 
-import time, os, json
+import time, os, json, re
+
+"""
+    problems need to be address: 
+        when same tabs has opened
+        when closing a tab
+
+"""
 
 script = """
 (function() {
@@ -28,6 +35,14 @@ script = """
     document.body.appendChild(button);
 })();
 """
+
+def check_tab_name(str):
+    pattern = r"\[_\d\]$"
+    if re.search(pattern, str):
+        return True
+    #end
+    return False
+#end
 
 # Selenium, why
 def getPreviousProfile(local_state_path):
@@ -79,8 +94,13 @@ if __name__ == '__main__':
         current_tabs = set(driver.window_handles)
         current_url = driver.current_url
 
-        indexed_title = f'{driver.title}_{driver.window_handles.index(driver.current_window_handle)}'
-        tab_map[driver.title] = driver.current_window_handle
+        if check_tab_name(driver.title) == False:
+            indexed_title = f'{driver.title}[_{driver.window_handles.index(driver.current_window_handle)}]'
+            driver.execute_script(f"document.title = '{indexed_title}';")
+            tab_map[indexed_title] = driver.current_window_handle
+            print("StillHappenei")
+        #end
+
         driver.execute_script(script)
         
         # Detect new tabs
@@ -88,7 +108,7 @@ if __name__ == '__main__':
             if handle not in tab_map.values():  # New tab detected
                 driver.switch_to.window(handle)
                 #driver.execute_script(f"document.title = '{indexed_title}';")
-                print(f"New tab detected: {driver.title}")
+                print(f"New tab detected: {indexed_title}")
                 tab_map[driver.title] = handle  # Store it in dictionary
             #end
         #end
@@ -114,7 +134,8 @@ if __name__ == '__main__':
         if active_window and "Chrome" in active_window.title:
             active_title = active_window.title.replace(" - Google Chrome", "").strip()
             try:
-                driver.switch_to.window(tab_map[active_title])
+                """"""
+                #driver.switch_to.window(tab_map[active_title])
             except:
                 print("a")
             #end
